@@ -11,7 +11,7 @@ const etag = require("etag");
 const typeis = require('type-is');
 
 
-//---- Express app routing
+//---- Express app routing ----
 
 const app = module.exports = express();
 const root = ".";
@@ -73,7 +73,7 @@ app.delete("/*", function(req, res, next){
 });
 
 
-//---- file function
+//---- file function ----
 
 function writeFile(filename, etagCode, text) {
     if(!fs.existsSync(filename)) {
@@ -121,7 +121,7 @@ function deleteFile(filename, etagCode) {
 }
 
 
-//---- util
+//---- util ----
 
 /**
  * フォームから送られてくるHTTPメソッドを他のメソッドに書き換えるミドルウェアを返す。
@@ -144,7 +144,7 @@ function formMethodOverride(getter, options={ methods:["POST"] }) {
 }
 
 
-//---- run
+//---- run ----
 
 if (!module.parent) {
     const serveIndex = require("serve-index");
