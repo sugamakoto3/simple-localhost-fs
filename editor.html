@@ -1,0 +1,148 @@
+<h1>I'm editor.</h1>
+
+<form data-method="GET" action="?" class="css-flex">
+  <textarea name="oldText" readonly required spellcheck="false" rows="14" cols="72">this is initial text</textarea>
+  <div class="css-grid">
+    <input type="button" value="GET" onclick="clickGET(this.form)" />
+    <input type="button" value="HEAD" onclick="clickHEAD(this.form)" />
+    ETag:
+    <span id="eTag" style="min-width: 100px;">"nullanmonai"</span>
+  </div>
+  Response:
+  <div class="status" data-size="4" style="white-space: nowrap;"></div>
+</form>
+
+<form data-method="PUT" action="?" class="css-flex">
+  <textarea name="newText" spellcheck="false" rows="14" cols="72" placeholder="this is placeholder text">fe</textarea>
+  <div class="css-grid">
+    <input type="button" value="PUT" onclick="clickPUT(this.form)" />
+    <input type="button" value="PUT force" onclick="clickPUT(this.form, true)" />
+  </div>
+  Response:
+  <div class="status" data-size="4" style="white-space: nowrap;"></div>
+</form>
+
+<form data-method="DELETE" action="?" class="css-flex">
+  <div class="css-grid">
+    <input type="button" value="DELETE" onclick="clickDELETE(this.form)" />
+    <input type="button" value="DELETE force" onclick="clickDELETE(this.form, true)" />
+  </div>
+  Response:
+  <div class="status" data-size="4" style="white-space: nowrap;"></div>
+</form>
+
+<!-- javascript -->
+
+<script type="text/javascript">
+  const eTagElem = document.getElementById("eTag");
+
+  // event listner
+  function clickGET(formElem) {
+    const statusBlock = formElem.getStatusBlock();
+    const textarea = formElem.getTextarea();
+    const opts = {};
+    opts.method = formElem.dataset.method;
+    // fetch
+    fetch(formElem.action).then((res) => {
+      const statusElem = statusBlock.appendStatus(`${res.status} ${res.statusText}`);
+      eTagElem.textContent = res.headers.get("ETag") || "nulish";
+      if (!isStatus(res, 200)) throw new Error("non");  //TODO 新しいErrorクラスを作る
+      const loadingElem = statusElem.appendLoading(" ...body parsing now...");
+      const text = res.text();  // this return Promise
+      return Promise.all([loadingElem, text]);
+    }).then(([loadingElem, text]) => {
+      loadingElem.parentElement.removeChild(loadingElem);
+      textarea.value = text;
+    }).catch((err) => {
+      textarea.value = err.message;  //TODO テキスト以外で表す
+    })
+  }
+  function clickHEAD(formElem, isForce=false) {
+    const statusBlock = formElem.getStatusBlock();
+    const textarea = formElem.getTextarea();
+    const opts = {};
+    opts.method = "HEAD";
+    // fetch
+    fetch(formElem.action, opts).then((res) => {
+      statusBlock.appendStatus(`${res.status} ${res.statusText}`);
+      eTagElem.textContent = res.headers.get("ETag") || "nulish";
+      if (!isStatus(res, 200)) throw new Error("non");  //TODO 新しいErrorクラスを作る
+    }).catch((err) => {
+      textarea.value = err.message;  //TODO テキスト以外で表す
+    })
+  }
+  function clickPUT(formElem, isForce=false) {
+    const statusBlock = formElem.getStatusBlock();
+    const textarea = formElem.getTextarea();
+    const opts = {};
+    opts.method = formElem.dataset.method;
+    opts.body = new URLSearchParams({"newText": textarea.value});
+    opts.headers = {};
+    if(!isForce) opts.headers["If-Match"] = eTagElem.textContent;
+    // fetch
+    fetch(formElem.action, opts).then((res) => {
+      statusBlock.appendStatus(`${res.status} ${res.statusText}`);
+    })
+  }
+  function clickDELETE(formElem, isForce=false) {
+    const statusBlock = formElem.getStatusBlock();
+    const opts = {};
+    opts.method = formElem.dataset.method;
+    opts.headers = {};
+    if(!isForce) opts.headers["If-Match"] = eTagElem.textContent;
+    // fetch
+    fetch(formElem.action, opts).then((res) => {
+      statusBlock.appendStatus(`${res.status} ${res.statusText}`);
+    })
+  }
+  
+  // util
+  const isStatus = (res, num) => (num <= res.status && res.status < num+100);
+
+  const formElemProto = Object.getPrototypeOf(document.forms[0]);
+  formElemProto.getTextarea = function() {
+    return this.getElementsByTagName("textarea")[0];
+  }
+  formElemProto.getStatusBlock = function() {
+    return this.getElementsByClassName("status")[0];
+  }
+
+  const statusBlockProto = Object.getPrototypeOf(document.forms[0].getStatusBlock());
+  statusBlockProto.appendStatus = function(text) {
+    const elem = document.createElement("div");
+    const size = Number(this.dataset.size);
+    if (this.children.length >= size) {
+      this.removeChild(this.firstChild);
+    }
+    elem.textContent = text;
+    return this.appendChild(elem);
+  }
+
+  const statusElemProto = statusBlockProto;
+  statusElemProto.appendLoading = function(text) {
+    const elem = document.createElement("span");
+    elem.textContent = text;
+    return this.appendChild(elem);
+  }
+
+  // init
+  const button = document.querySelector("form[data-method=GET] input[type=button]");
+  // button.onclick();
+</script>
+
+<!-- css -->
+
+<style type="text/css">
+  .css-flex {
+    display: flex;
+    column-gap: 0.25em;
+    align-items: start;
+  }
+  .css-grid {
+    display: grid;
+    gap: 0.25em;
+    align-self: start;
+  }
+</style>
+
+
